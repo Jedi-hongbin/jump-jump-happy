@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>跳跳乐</title>
+    <style>
+        body,
+        html {
+            height: 100%;
+            overflow: hidden;
+            margin: 0
+        }
+
+        :root {
+            --font-family-primary: "Fredoka One", sans-serif;
+            --font-family-secondary: "Source Sans Pro", sans-serif;
+            --font-family-monospace: "Source Code Pro", monospace;
+            --color-text: #121212;
+            --color-yellow: #fbe8a6;
+            --color-yellow-alt: #e6c513;
+            --color-yellow-tint: #cfb011;
+            --color-red: #f76d6d;
+            --color-red-tint: #f53d3d;
+            --color-orange: #f4976c;
+            --color-cyan: #a8d1e7;
+            --color-white: #f5f5f5;
+            --color-blue: #24315e
+        }
+
+        #blocker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            color: #fffae5;
+            font-size: 3vmin;
+            letter-spacing: .5vmin
+        }
+
+        p {
+            padding: 1vmin;
+            min-width: 200px;
+            text-align: left
+        }
+
+        p:first-child {
+            font-size: 5vw;
+            letter-spacing: 12px;
+            background: linear-gradient(45deg, #7d3e6b85, #3f2d7780);
+            border-radius: 5px;
+            width: 100vw;
+            text-align: center;
+            box-shadow: 1px 3px 5px 0 #141414;
+            padding: 20px;
+            text-shadow: 8px 6px 5px #160340
+        }
+
+        p:nth-child(2) {
+            font-size: 3vmin;
+            letter-spacing: 1vmin;
+            background-color: #00000088;
+            border-radius: 1vmin;
+            padding: 1vmin 3vmin
+        }
+
+        #instructions {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer
+        }
+
+        p:last-child {
+            position: fixed;
+            bottom: 1vh;
+            font-size: 1vw
+        }
+
+        h5 {
+            background: #ffffff26;
+            padding: 5px 10px;
+            border-radius: 10px;
+            color: #b4baf7bf
+        }
+
+        #passLevel {
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            z-index: 99;
+            background: #16034044;
+            transition: all .4s linear;
+            top: 100vw
+        }
+
+        #passLevel {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            grid-gap: 5px
+        }
+
+        #passLevel>h1 {
+            grid-area: 2/2/7/8;
+            color: #fff;
+            background-color: #000000a3;
+            margin: 0;
+            padding: 4vw;
+            font-size: 5vw;
+            text-shadow: 5px 5px 3px #111312
+        }
+
+        .clay {
+            background: var(--clay-background, rgba(0, 0, 0, .005));
+            border-radius: var(--clay-border-radius, 28px);
+            box-shadow: var(--clay-shadow-outset, 8px 8px 16px 0 rgba(0, 0, 0, .25)), inset var(--clay-shadow-inset-primary, -8px -8px 16px 0 rgba(0, 0, 0, .25)), inset var(--clay-shadow-inset-secondary, 8px 8px 16px 0 hsla(0, 0%, 100%, .2))
+        }
+
+        #passLevel button {
+            --clay-background: var(--color-red);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 3vw;
+            text-shadow: 2px 2px 4px var(--text-shadow, #9e4242)
+        }
+
+        #passLevel #next {
+            grid-area: 3/4/5/6
+        }
+
+        #restart {
+            --clay-background: #aaaaff !important;
+            --text-shadow: #7474b7;
+            background: var(--clay-background, rgba(0, 0, 0, .005)) !important;
+            grid-area: 4/5/6/7;
+            transform: translateY(2vw)
+        }
+    </style>
+    <script defer="defer" src="bundle.a93ff34738f852e468ac.js"></script>
+</head>
+
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <p class="title">跳跳乐</p>
+            <p>移动: <strong>W A S D</strong></p>
+            <p>跳: <strong>空格</strong></p>
+            <p>观察: 移动鼠标</p>
+            <p>加速: shift</p>
+            <h5>巧用加速有意想不到的效果</h5>
+            <p>点击任意处开始</p>
+        </div>
+    </div>
+    <div id="passLevel">
+        <h1 class="clay">恭喜🎉<br />通过关卡</h1><button id="next" class="clay">下一关</button> <button id="restart"
+            class="clay">再来一次</button>
+    </div>
+</body>
+
+</html>
