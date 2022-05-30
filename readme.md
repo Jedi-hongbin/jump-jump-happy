@@ -1,16 +1,7 @@
-# Three.js Journey
+server 目录为 node 部署
 
-## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
+```bash
+yarn init
 
-``` bash
-# Install dependencies (only the first time)
-npm install
-
-# Run the local server at localhost:8080
-npm run dev
-
-# Build for production in the dist/ directory
-npm run build
+yarn dev
 ```
