@@ -1,17 +1,19 @@
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import TWEEN from "@tweenjs/tween.js";
 import fontJSON from "../static/font/JJHappy.json";
 
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('draco/');
+dracoLoader.setDecoderPath("draco/");
 const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
 let camera, scene, renderer, controls;
+let startPoint, endPoint, halfPoint;
 const fontLoad = new FontLoader();
 const font = fontLoad.parse(fontJSON);
 const objects = [];
@@ -23,56 +25,55 @@ let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
 /**
-* iframe id
-*/
+ * iframe id
+ */
 let animationFrame = null;
 /**
-* 按下shift键加速
-*/
+ * 按下shift键加速
+ */
 let pressShift = false;
 let canJump = false;
 /**
-* 成功过关的文字提示
-*/
+ * 成功过关的文字提示
+ */
 let successText;
 /**
-* 砖块数量
-*/
+ * 砖块数量
+ */
 const blockCounts = 40;
 
 let prevTime = performance.now();
 const velocity = new THREE.Vector3();
 const color = new THREE.Color();
 /**
-* 跳跃高度
-*/
+ * 跳跃高度
+ */
 const JumpHeight = 300;
 /**
-* 眼睛位置
-*/
+ * 眼睛位置
+ */
 const eyeHeight = 10;
 /**
-* 砖块的集合
-*/
+ * 砖块的集合
+ */
 
 let blocks = [];
 
 init();
 
 function createTitle() {
-    const textGeo = new TextGeometry('提示: 善用加速和二段跳可抵达更远处', {
+    const textGeo = new TextGeometry("提示: 善用加速和二段跳可抵达更远处", {
         font,
         size: 4,
-        height: 4,
+        height: 2,
         curveSegments: 0.2,
         bevelThickness: 0.1,
         bevelSize: 0.1,
-        bevelEnabled: true
-
+        bevelEnabled: true,
     });
     const materials = [
         new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true }), // front
-        new THREE.MeshPhongMaterial({ color: 0xffffff }) // side
+        new THREE.MeshPhongMaterial({ color: 0xffffff }), // side
     ];
     const textMesh = new THREE.Mesh(textGeo, materials);
     return textMesh;
@@ -87,7 +88,13 @@ function createTitle() {
  * @param {*} onComplete 执行完回掉函数
  * @return {*}
  */
-const animationFrameTrans = (mash, prop, valRegion = [0, 1], paragraph = 10, onComplete) => {
+const animationFrameTrans = (
+    mash,
+    prop,
+    valRegion = [0, 1],
+    paragraph = 10,
+    onComplete
+) => {
     const diff = valRegion[1] - valRegion[0];
     const count = diff / paragraph;
     mash[prop] = valRegion[0];
@@ -97,29 +104,28 @@ const animationFrameTrans = (mash, prop, valRegion = [0, 1], paragraph = 10, onC
         if (mash[prop] <= valRegion[1]) {
             requestAnimationFrame(tick);
         } else onComplete && onComplete();
-    }
+    };
     tick();
-}
+};
 
 function createSuccessInfo() {
-    const textGeo = new TextGeometry('过关', {
+    const textGeo = new TextGeometry("过关", {
         font,
         size: 15,
         height: 4,
         curveSegments: 0.5,
         bevelThickness: 0.5,
         bevelSize: 0.5,
-        bevelEnabled: true
-
+        bevelEnabled: true,
     });
     const materials = [
         new THREE.MeshPhongMaterial({ color: 0xa030ff, flatShading: true }), // front
-        new THREE.MeshPhongMaterial({ color: 0x5511ff }) // side
+        new THREE.MeshPhongMaterial({ color: 0x5511ff }), // side
     ];
-    materials.forEach(m => {
+    materials.forEach((m) => {
         m.transparent = true;
         m.opacity = 0;
-    })
+    });
     const textMesh = new THREE.Mesh(textGeo, materials);
     return textMesh;
 }
@@ -154,7 +160,6 @@ function init() {
      */
     controls = new PointerLockControls(camera, document.body);
 
-
     const blocker = document.getElementById("blocker");
     const instructions = document.getElementById("instructions");
 
@@ -170,22 +175,21 @@ function init() {
 
     controls.addEventListener("unlock", function () {
         if (alreadyPass) {
-            const passLevel = document.querySelector('#passLevel');
-            passLevel.style['top'] = 0;
+            const passLevel = document.querySelector("#passLevel");
+            passLevel.style["top"] = 0;
         } else {
             blocker.style.display = "block";
             instructions.style.display = "";
             //取消 逐帧执行
             cancelAnimationFrame(animationFrame);
         }
-
     });
 
     scene.add(controls.getObject());
 
     /**
-    * 上帝视角
-    */
+     * 上帝视角
+     */
     // camera.position.set(343, 624, 313);
 
     const onKeyDown = function (event) {
@@ -261,7 +265,7 @@ function init() {
         10
     );
 
-    // floor
+    // 地面
     let floorGeometry = new THREE.PlaneGeometry(2000, 2000, 2, 2);
     floorGeometry.rotateX(-Math.PI / 2);
 
@@ -288,8 +292,9 @@ function init() {
             specular: 0xffffff,
             flatShading: true,
             vertexColors: true,
+            //允许透明并且设置透明度
             transparent: true,
-            opacity: 0.3
+            opacity: 0.3,
         });
         boxMaterial.color.setHSL(
             Math.random() * 0.75 + 0.25,
@@ -299,54 +304,72 @@ function init() {
 
         const box = new THREE.Mesh(boxGeometry, boxMaterial);
         return box;
-    }
+    };
 
     /**
-    * 最后一块砖上显示成功文字
-    */
+     * 最后一块砖上显示成功文字
+     */
     successText = createSuccessInfo();
     successText.position.x = 420;
     successText.position.y = 615;
     successText.position.z = 300;
     successText.rotation.y = Math.PI / -2;
-    successText.userData.index = '过关';
+    successText.userData.index = "过关";
     objects.push(successText);
     scene.add(successText);
     /**
-    * 通天塔阶台阶🧱
-    */
+     * 通天塔阶台阶🧱
+     */
     const genBlock = () => {
         const half = blockCounts / 2;
         const height = 10;
         const width = 50;
-        let startPoint;
-        for (let i = 0; i <= blockCounts; i++) {
-            const top = 10 * (i <= half ? half - i : i);
-            const box = creatBox(width, height);
-            const x = width * (i > half ? i - blockCounts : i) + i * 30 - 800;
-            box.position.x = x;
-            box.position.y = top / 2;
-            box.position.z = i * 8;
-            box.translateY(top);
-            box.userData.index = i;
-            blocks.push(box);
-            if (i === half) startPoint = [x, top / 2, i * 8];
-        }
-        camera.position.set(...startPoint);
+
         /**
-        * 第一阶段最终砖块 显示提示文字
-        */
+         * 返回砖块坐标
+         */
+        const getPosition = (i) => {
+            const top = 10 * (i <= half ? half - i : i);
+            const x = width * (i > half ? i - blockCounts : i) + i * 30 - 800;
+            const y = top / 2;
+            const z = i * (8 + (Math.random() - 0.5) * 5);
+            return { x, y, z, top };
+        };
+
+        for (let i = 0; i <= blockCounts; i++) {
+            const box = creatBox(width, height);
+            const { x, y, z, top } = getPosition(i);
+            box.position.set(x, y, z);
+            box.translateY(top);
+            box.userData = {
+                index: i,
+                prevPosition: box.position.clone(),
+                speed: Math.random(),
+                dir: Math.random() - 0.5 > 0 ? 1 : -1,
+            }
+            blocks.push(box);
+        }
+        halfPoint = getPosition(0);
+        startPoint = getPosition(half);
+        // camera.position.set(halfPoint.x, halfPoint.y + halfPoint.top + 20, halfPoint.z);
+        camera.position.set(startPoint.x, startPoint.y + startPoint.top + 20, startPoint.z);
+        /**
+         * 第一阶段最终砖块 显示提示文字
+         */
         //文字也可以踩
         const title = createTitle();
-        title.position.set(-820, 350, 50);
+        title.position.set(halfPoint.x - 20, halfPoint.y + 40, halfPoint.z + 50);
+        title.translateY(10 * half);
         title.rotation.y = Math.PI / 2;
-        title.userData.index = '踩提示文字上了';
+        title.userData.index = "踩提示文字上了";
         objects.push(title);
         scene.add(title);
-    }
+    };
     genBlock();
     scene.add(...blocks);
     objects.push(...blocks);
+    //视线往哪看
+    camera.lookAt(successText.position);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -369,25 +392,30 @@ function onWindowResize() {
 renderer.render(scene, camera);
 
 /**
-* 传入角度即方向 判断附近有没有障碍物 返回障碍物数量
-*/
+ * 传入角度即方向 判断附近有没有障碍物 返回障碍物数量
+ */
 const collideCheck = (angle) => {
     let rotationMatrix = new THREE.Matrix4();
-    rotationMatrix.makeRotationY(angle * Math.PI / 180);
-    const cameraDirection = controls.getDirection(new THREE.Vector3(0, 0, 0)).clone()
+    rotationMatrix.makeRotationY((angle * Math.PI) / 180);
+    const cameraDirection = controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
     cameraDirection.applyMatrix4(rotationMatrix);
-    const raycaster = new THREE.Raycaster(controls.getObject().position.clone(), cameraDirection, 0, 5);
+    const raycaster = new THREE.Raycaster(
+        controls.getObject().position.clone(),
+        cameraDirection,
+        0,
+        5
+    );
     raycaster.ray.origin.y -= eyeHeight;
     const intersections = raycaster.intersectObjects(objects, false);
     intersections.length && console.log(intersections[0].object.userData.index);
     return intersections.length;
-}
+};
 
 const direction = new THREE.Vector3();
 
 function animate() {
     animationFrame = requestAnimationFrame(animate);
-
+    TWEEN.update();
     const time = performance.now();
     if (controls.isLocked === true) {
         /**
@@ -397,22 +425,19 @@ function animate() {
         raycaster.ray.origin.copy(controls.getObject().position);
         raycaster.ray.origin.y -= eyeHeight;
 
-        const intersections = raycaster.intersectObjects(objects, false);
-        const onObject = intersections.length;
-
         //四个方位是否产生碰撞
         let leftCollide = false;
         let rightCollide = false;
         let forwardCollide = false;
         let backCollide = false;
         /**
-        * 碰撞检测 collide check
-        */
+         * 碰撞检测 collide check
+         * 未检查头部碰撞
+         */
         if (moveForward) forwardCollide = collideCheck(0);
         if (moveBackward) backCollide = collideCheck(180);
         if (moveLeft) leftCollide = collideCheck(90);
         if (moveRight) rightCollide = collideCheck(270);
-        // if (moveRight) rightCollide = collideCheck(360);
 
         direction.z = Number(moveForward) - Number(moveBackward);
         direction.x = Number(moveRight) - Number(moveLeft);
@@ -435,30 +460,24 @@ function animate() {
         //按下了左/右
         if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
 
-        //控制‘落地’
-        if (onObject) {
-            velocity.y = Math.max(0, velocity.y);
-            canJump = true;
-            console.log(intersections[0].object.userData.index);
+        fall();
 
-            //踩到的砖块变实
+        /**
+         * 砖块运动
+         */
+        blocks.forEach((block) => {
+            let {
+                prevPosition: { y },
+                speed,
+                dir,
+            } = block.userData;
 
-            if (!intersections[0].object.userData.opacity) {
-                intersections[0].object.userData.opacity = true;
-                animationFrameTrans(intersections[0].object.material, 'opacity', [0.3, 1], 10);
+            if (dir * (block.position.y - y) > 30) {
+                block.userData.dir *= -1;
+                dir *= -1;
             }
-
-            //显示过关文字
-            if (intersections[0].object.userData.index === blockCounts) {
-                !alreadyPass && successText && successText.material.forEach(m => {
-                    animationFrameTrans(m, 'opacity', [0, 1], 50);
-                })
-                setTimeout(() => {
-                    controls.unlock();
-                }, 1300)
-                alreadyPass = true;
-            }
-        }
+            block.position.y += dir * speed;
+        });
 
         //加速级别
         const quicken = pressShift ? 7 : 1;
@@ -473,7 +492,7 @@ function animate() {
         if ((moveForward && forwardCollide) || (moveBackward && backCollide)) {
             forwardDistance = 0;
         }
-        //设置最终移动值 
+        //设置最终移动值
         if (moveLeft || moveRight) controls.moveRight(rightDistance);
 
         if (moveForward || moveBackward) controls.moveForward(forwardDistance);
@@ -492,10 +511,82 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-document.querySelector('#restart').addEventListener('click', () => {
-    window.location.reload();
-})
+/**
+ * 检测下落
+ */
+function fall() {
+    const intersections = raycaster.intersectObjects(objects, false);
+    const onObject = intersections.length;
+    //如果下方没有物体不处理
+    if (!onObject) return;
+    velocity.y = Math.max(0, velocity.y);
 
-document.querySelector('#next').addEventListener('click', () => {
-    alert('开发中。。。')
-})
+    canJump = true;
+    console.log(intersections[0].object.userData.index);
+
+    //踩到的砖块变实
+    if (!intersections[0].object.userData.opacity) {
+        intersections[0].object.userData.opacity = true;
+        animationFrameTrans(intersections[0].object.material, "opacity", [0.3, 1], 10);
+    }
+
+    //显示过关文字
+    if (intersections[0].object.userData.index === blockCounts) {
+        !alreadyPass &&
+            successText &&
+            successText.material.forEach((m) => {
+                animationFrameTrans(m, "opacity", [0, 1], 50);
+            });
+        setTimeout(() => {
+            controls.unlock();
+        }, 1300);
+        alreadyPass = true;
+    }
+}
+
+document.querySelector("#restart").addEventListener("click", () => {
+    window.location.reload();
+});
+
+document.querySelector("#next").addEventListener("click", () => {
+    alert("开发中。。。");
+});
+
+// function rotateCameraToObject(object3D, time) {
+//     var cameraPosition = camera.position.clone(); // camera original position
+//     var cameraRotation = camera.rotation.clone(); // camera original rotation
+//     var cameraQuaternion = camera.quaternion.clone(); // camera original quaternion
+//     var dummyObject = new THREE.Object3D(); // dummy object
+//     // set dummyObject's position, rotation and quaternion the same as the camera
+//     dummyObject.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+//     dummyObject.rotation.set(cameraRotation.x, cameraRotation.y, cameraRotation.z);
+//     dummyObject.quaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z);
+//     // lookAt object3D
+//     // dummyObject.lookAt(object3D.position);
+//     // dummyObject.lookAt(object3D.position);
+//     // store its quaternion in a variable
+//     var targetQuaternion = dummyObject.quaternion.clone();
+//     // tween start object
+//     var tweenStart = {
+//         x: cameraQuaternion.x,
+//         y: cameraQuaternion.y,
+//         z: cameraQuaternion.z,
+//         w: cameraQuaternion.w
+//     };
+//     //tween target object
+//     var tweenTarget = {
+//         x: targetQuaternion.x,
+//         y: targetQuaternion.y,
+//         z: targetQuaternion.z,
+//         w: targetQuaternion.w
+//     };
+//     // tween stuff
+//     var tween = new TWEEN.Tween(tweenStart).to(tweenTarget, time);
+//     tween.onUpdate(function () {
+//         camera.quaternion.x = tweenStart.x;
+//         camera.quaternion.y = tweenStart.y;
+//         camera.quaternion.z = tweenStart.z;
+//         camera.quaternion.w = tweenStart.w;
+//     });
+//     tween.start();
+// }
